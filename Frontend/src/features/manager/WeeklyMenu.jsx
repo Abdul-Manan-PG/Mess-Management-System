@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CalendarDays, Save } from 'lucide-react';
-
+import axios from 'axios'
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function WeeklyMenu() {
@@ -20,12 +20,27 @@ export default function WeeklyMenu() {
     }));
   };
 
+  // const handleSaveMenu = async () => {
+  //   setIsSaving(true);
+  //   await new Promise(resolve => setTimeout(resolve, 800));
+  //   console.log("Weekly Menu Saved:", weekMenu);
+  //   setIsSaving(false);
+  // };
+
   const handleSaveMenu = async () => {
-    setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    console.log("Weekly Menu Saved:", weekMenu);
+  setIsSaving(true);
+  try {
+    // Send the weekMenu object directly to the backend
+    const response = await axios.post('http://localhost:5000/api/manager/update-menu', weekMenu);
+    
+    alert(response.data.message);
+  } catch (error) {
+    console.error("Save Error:", error);
+    alert("Failed to save menu");
+  } finally {
     setIsSaving(false);
-  };
+  }
+};
 
   return (
     <div className="flex flex-col h-full bg-white border shadow-sm rounded-xl border-zinc-200">
