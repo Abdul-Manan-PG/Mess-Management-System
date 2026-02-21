@@ -1,5 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { Upload, UserPlus } from 'lucide-react';
+import axios from 'axios'
 
 export default function ManageUsers() {
   const { register, handleSubmit, reset } = useForm();
@@ -10,10 +11,28 @@ export default function ManageUsers() {
     reset();
   };
 
-  const onFileUpload = (event) => {
+  const onFileUpload = async (event) => {
     const file = event.target.files[0];
     console.log("Uploading File:", file);
     // TODO: Send file to Backend API
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/admin/upload-students', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data', // Tells the server a file is coming
+        },
+      });
+
+      console.log("Server Response:", response.data);
+      alert(`Success! ${response.data.count} students uploaded to Database.`);
+    } catch (error) {
+      console.error("Upload Error:", error);
+      alert("Error uploading file. Check terminal.");
+    }
   };
 
   return (
@@ -54,7 +73,7 @@ export default function ManageUsers() {
         <div className="flex flex-col items-center justify-center h-48 border-2 border-dashed rounded-lg border-zinc-300 bg-zinc-50">
           <label className="cursor-pointer text-center">
             <span className="block mb-2 text-sm text-zinc-500">Click to upload .xlsx file</span>
-            <input type="file" accept=".xlsx, .xls" onChange={onFileUpload} className="hidden" />
+            <input type="file" accept=".csv, .xlsx, .xls" onChange={onFileUpload} className="hidden" />
             <span className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border rounded-md shadow-sm hover:bg-zinc-50">
               Select File
             </span>

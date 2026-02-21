@@ -1,6 +1,9 @@
 import Student from '../models/Student.js';
 import csv from 'csvtojson';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
+import StudentRecord from '../models/StudentRecord.js';
+
 
 export const uploadStudents = async (req, res) => {
     try {
@@ -9,6 +12,7 @@ export const uploadStudents = async (req, res) => {
         const jsonArray = await csv().fromFile(req.file.path);
         
         const preparedStudents = [];
+        const plainStudents = [];
         const responseData = [];
 
         for (const item of jsonArray) {
@@ -19,8 +23,9 @@ export const uploadStudents = async (req, res) => {
             const name = item.NAME; 
             const rollNumber = item["Roll no"]; 
 
-            const email = `${rollNumber.toLowerCase()}@ksk.uet.edu.pk`;
-            email.replaceAll('-','');
+      const cleanRollForEmail = rollNumber.replace(/-/g, "").toLowerCase();
+            const email = `${cleanRollForEmail}@ksk.uet.edu.pk`;
+
             const randomPassword = "uet" + Math.floor(1000 + Math.random() * 9000);
 
             const salt = await bcrypt.genSalt(10);
@@ -33,12 +38,27 @@ export const uploadStudents = async (req, res) => {
                 password: hashedPassword
             });
 
+
+            // Data for Plain Collection
+            plainStudents.push({
+                name: name || "Unknown",
+                rollNumber: rollNumber,
+                email,
+                plainPassword: randomPassword // STORED AS PLAIN TEXT
+            });
+
             responseData.push({ name, rollNumber, email, randomPassword });
         }
 
         // 3. FIX: Changed 'studentsToInsert' to 'preparedStudents'
         // ordered: false allows skipping duplicates if you upload the same file twice
         await Student.insertMany(preparedStudents, { ordered: false });
+        await StudentRecord.insertMany(plainStudents, { ordered: false });
+
+        fs.unlink(req.file.path, (err) => {
+            if (err) console.error("Error deleting file:", err);
+            else console.log(`Deleted temporary file: ${req.file.path}`);
+        });
 
         res.status(201).json({ 
             message: "Students uploaded successfully!",
