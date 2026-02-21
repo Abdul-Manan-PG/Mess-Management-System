@@ -3,7 +3,7 @@ import csv from 'csvtojson';
 import bcrypt from 'bcryptjs';
 import fs from 'fs';
 import StudentRecord from '../models/StudentRecord.js';
-import student from '../models/student.js';
+
 
 
 export const uploadStudents = async (req, res) => {
@@ -83,7 +83,7 @@ export const addStudent = async (req, res) => {
     try {
         // 1. Get data from req.body (not req.body.params)
         const { name, rollNumber, password } = req.body;
-
+console.log(name,password,rollNumber);
         // 2. Requirement: All fields must be filled
         if (!name || !rollNumber || !password) {
             return res.status(400).json({ message: "All fields must be filled" });

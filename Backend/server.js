@@ -15,7 +15,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json()); // To read JSON data sent by your friend
-
+app.use(express.urlencoded({ extended: true })); // Essential for Form-encoded data
 // Basic Route for testing
 
 app.use('/api/admin', adminRoutes);

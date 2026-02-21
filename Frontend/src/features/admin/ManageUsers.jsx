@@ -5,17 +5,22 @@ import axios from 'axios'
 export default function ManageUsers() {
   const { register, handleSubmit, reset } = useForm();
 
-  const onManualSubmit = (data) => {
+  const onManualSubmit =async (data) => {
     console.log("Creating User:", data);
-    // TODO: Connect to Backend API
+  try {
+    const response = await axios.post('http://localhost:5000/api/admin/add-student', data);
+    alert(response.data.message);
+  } catch (error) {
+    console.error("API Error:", error);
+    alert(error.response?.data?.message || "Failed to add student");
+  }
     reset();
   };
 
   const onFileUpload = async (event) => {
     const file = event.target.files[0];
     console.log("Uploading File:", file);
-    // TODO: Send file to Backend API
-
+    //api call here 
     const formData = new FormData();
     formData.append('file', file);
 
@@ -51,7 +56,7 @@ export default function ManageUsers() {
           </div>
           <div>
             <label className="text-sm font-medium text-zinc-700">Roll Number</label>
-            <input {...register("rollNo")} className="w-full p-2 border rounded-md bg-zinc-50" placeholder="e.g. 2024cs643" />
+            <input {...register("rollNumber")} className="w-full p-2 border rounded-md bg-zinc-50" placeholder="e.g. 2024cs643" />
           </div>
           <div>
             <label className="text-sm font-medium text-zinc-700">Password</label>
