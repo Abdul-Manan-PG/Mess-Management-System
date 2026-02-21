@@ -3,6 +3,7 @@ import csv from 'csvtojson';
 import bcrypt from 'bcryptjs';
 import fs from 'fs';
 import StudentRecord from '../models/StudentRecord.js';
+import student from '../models/student.js';
 
 
 export const uploadStudents = async (req, res) => {
@@ -70,6 +71,57 @@ export const uploadStudents = async (req, res) => {
         // If it's a duplicate error (code 11000), we still want to tell the user
         if (error.code === 11000) {
             return res.status(201).json({ message: "Upload done (some duplicates were skipped)" });
+        }
+        res.status(500).json({ message: error.message });
+    }
+};
+
+
+
+
+export const addStudent = async (req, res) => {
+    try {
+        // 1. Get data from req.body (not req.body.params)
+        const { name, rollNumber, password } = req.body;
+
+        // 2. Requirement: All fields must be filled
+        if (!name || !rollNumber || !password) {
+            return res.status(400).json({ message: "All fields must be filled" });
+        }
+
+        // 3. Requirement: Remove hyphen/dash and make lowercase
+        // Example: "2024-CS-643" -> "2024cs643"
+        const cleanRoll = rollNumber.replace(/-/g, "").toLowerCase();
+        
+        // 4. Generate the official email automatically
+        const email = `${cleanRoll}@ksk.uet.edu.pk`;
+
+        // 5. Hash the password for security
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // 6. Use .create() instead of .insert() (Mongoose uses .create)
+        // Store in the Hashed collection
+        await Student.create({ 
+            name, 
+            rollNumber, 
+            email, 
+            password: hashedPassword 
+        });
+
+        // Store in the Plain collection (as you requested earlier)
+        await StudentRecord.create({ 
+            name, 
+            rollNumber, 
+            email, 
+            plainPassword: password 
+        });
+
+        res.status(201).json({ message: "Student created successfully!" });
+
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ message: "Duplicate entry: Roll Number already exists." });
         }
         res.status(500).json({ message: error.message });
     }
