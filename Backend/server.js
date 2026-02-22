@@ -4,6 +4,8 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import adminRoutes from './routes/adminRoutes.js'
 import managerRoutes from './routes/managerRoutes.js'
+import authRoutes from './routes/authRoutes.js'
+import studentRoutes from './routes/studentRoutes.js'
 
 // Load variables from .env
 dotenv.config();
@@ -22,6 +24,10 @@ app.use(express.urlencoded({ extended: true })); // Essential for Form-encoded d
 app.use('/api/admin', adminRoutes);
 
 app.use('/api/manager',managerRoutes)
+
+app.use('/api/auth',authRoutes)
+
+app.use('/api/student',studentRoutes)
 app.get('/', (req, res) => {
     res.send("Hostel Mess API is running! 🚀");
 });

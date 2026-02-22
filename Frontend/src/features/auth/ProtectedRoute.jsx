@@ -1,21 +1,21 @@
 import { Navigate } from 'react-router-dom';
 
 export default function ProtectedRoute({ children, allowedRoles }) {
-  // Read the authentication status and role from local storage
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  // 1. Read the REAL token and role
+  const token = localStorage.getItem('studentToken'); // Changed from isAuthenticated
   const userRole = localStorage.getItem('role');
 
-  // If they aren't logged in at all, kick them to the login screen
-  if (!isAuthenticated) {
+  // 2. If no token exists, they are not logged in
+  if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  // If they are logged in but trying to access a page they shouldn't 
-  // (e.g., a student trying to hit /admin-dashboard)
+  // 3. Check if their role is allowed for this specific route
   if (!allowedRoles.includes(userRole)) {
+    // If a student tries to enter admin area, send them back to student dashboard
     return <Navigate to={`/${userRole}-dashboard`} replace />;
   }
 
-  // If everything is correct, let them see the page
+  // 4. Everything is good!
   return children;
 }

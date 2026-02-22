@@ -3,9 +3,37 @@ import { useNavigate } from "react-router-dom";
 import { Utensils, LogOut, Check, X, Snowflake } from "lucide-react";
 import axios from "axios";
 import ReadOnlyWeeklyMenu from "./ReadOnlyWeeklyMenu";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
+
+const getMealLabel = (mealType) => {
+  const currentHour = new Date().getHours();
+  if (mealType === "lunch") {
+    // Before 1 PM show Today, after 1 PM show Tomorrow
+    return currentHour >= 13 ? "Tomorrow's Lunch" : "Today's Lunch";
+  }
+  if (mealType === "dinner") {
+    // Before 9 PM show Today, after 9 PM show Tomorrow
+    return currentHour >= 21 ? "Tomorrow's Dinner" : "Today's Dinner";
+  }
+  return "Meal Info";
+};
+
+const getTargetDate = (mealType) => {
+  const now = new Date();
+  const currentHour = now.getHours();
+  const target = new Date();
+
+  if (mealType === 'lunch' && currentHour >= 13) {
+    target.setDate(now.getDate() + 1); // Switch to tomorrow after 1 PM
+  } else if (mealType === 'dinner' && currentHour >= 21) {
+    target.setDate(now.getDate() + 1); // Switch to tomorrow after 9 PM
+  }
+  
+  return target.toISOString().split('T')[0]; // Returns "YYYY-MM-DD"
+};
 
   // STATE MANAGEMENT
   // ------------------------------------------------------------------
@@ -44,45 +72,73 @@ export default function StudentDashboard() {
    * "dinner": "String (e.g., Daal Mash & Roti)"
    * }
    */
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const headers = { Authorization: `Bearer ${localStorage.getItem("token")}` };
+useEffect(() => {
+  const fetchDashboardData = async () => {
+    try {
+      // Use the correct token key from your local storage
+      const token = localStorage.getItem("studentToken"); 
+      const headers = { Authorization: `Bearer ${token}` };
 
-        const [freezeRes, mealRes] = await Promise.all([
-          axios.get("/student/get-freeze-status", { headers }),
-          axios.get("/student/meal-status", { headers }),
-        ]);
+      // Helper to calculate the "Target Date" based on cutoff times
+      const getTargetDate = (mealType) => {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const target = new Date();
 
-        // Process Freeze Status
-        const freezeData = freezeRes.data;
-        if (freezeData["freeze-status"] === true) {
-          setFreezeInfo({
-            isFrozen: true,
-            fromDate: freezeData["starting date"] || "",
-            toDate: freezeData["ending date"] || "",
-          });
+        if (mealType === 'lunch' && currentHour >= 13) {
+          // After 1 PM, target tomorrow's lunch
+          target.setDate(now.getDate() + 1);
+        } else if (mealType === 'dinner' && currentHour >= 21) {
+          // After 9 PM, target tomorrow's dinner
+          target.setDate(now.getDate() + 1);
         }
-
-        // Process Meal Status
-        const mealData = mealRes.data;
-        setMenu({
-          lunch: mealData.lunch || "Not specified",
-          dinner: mealData.dinner || "Not specified",
-        });
-        setMealStatus({
-          lunch: mealData["lunch-status"], 
-          dinner: mealData["dinner-status"], 
-        });
         
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
+        return target.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+      };
+
+      const lunchDate = getTargetDate('lunch');
+      const dinnerDate = getTargetDate('dinner');
+
+      // Fetch both Freeze status and the specific Meal statuses for those dates
+      const [freezeRes, mealRes] = await Promise.all([
+        axios.get("/http://localhost:5000/api/student/get-freeze-status", { headers }),
+        axios.get("http://localhost:5000/api/student/meal-status", { 
+          headers,
+          params: { lunchDate, dinnerDate } // Sending specific dates to backend
+        }),
+      ]);
+
+      // 1. Process Freeze Status
+      const freezeData = freezeRes.data;
+      if (freezeData["freeze-status"] === true) {
+        setFreezeInfo({
+          isFrozen: true,
+          fromDate: freezeData["starting date"] || "",
+          toDate: freezeData["ending date"] || "",
+        });
       }
-    };
 
-    fetchDashboardData();
-  }, []);
+      // 2. Process Meal Status (Lunch and Dinner)
+      const mealData = mealRes.data;
+      setMenu({
+        lunch: mealData.lunch || "Not specified",
+        dinner: mealData.dinner || "Not specified",
+      });
 
+      // Update the status (Accepted/Rejected/Null) for the calculated target dates
+      setMealStatus({
+        lunch: mealData["lunch-status"], 
+        dinner: mealData["dinner-status"], 
+      });
+      
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+    }
+  };
+
+  fetchDashboardData();
+}, []);
+ 
   // HANDLERS
   // ------------------------------------------------------------------
   
@@ -102,25 +158,29 @@ export default function StudentDashboard() {
    * OR
    * { "dinner-status": true } OR { "dinner-status": false }
    * * EXPECTED RESPONSE: 
-   * 200 OK status. Response body is not strictly used by frontend.
+   * 200 OK status. Response body is not strictly used by frontend. 
    */
-  const handleMealDecision = async (mealType, decision) => {
-    try {
-      const headers = { Authorization: `Bearer ${localStorage.getItem("token")}` };
+ const handleMealDecision = async (mealType, decision) => {
+  try {
+    const targetDate = getTargetDate(mealType); // Identify if voting for today or tomorrow
+    const token = localStorage.getItem("studentToken"); // Use your new JWT token name
+    const headers = { Authorization: `Bearer ${token}` };
 
-      await axios.post(
-        "/student/update-meal-status",
-        { [`${mealType}-status`]: decision },
-        { headers }
-      );
+    await axios.post(
+      "/student/update-meal-status",
+      { 
+        mealType,    // 'lunch' or 'dinner'
+        decision,    // true or false
+        date: targetDate 
+      },
+      { headers }
+    );
 
-      setMealStatus((prev) => ({ ...prev, [mealType]: decision }));
-    } catch (error) {
-      console.error("Error updating meal:", error);
-      alert("Network error. Could not update meal status.");
-    }
-  };
-
+    setMealStatus((prev) => ({ ...prev, [mealType]: decision }));
+  } catch (error) {
+    console.error("Error updating meal:", error);
+  }
+};
   /**
    * @BACKEND_API_CONTRACT - POST Freeze Status Update
    * * POST /update-freeze-status
@@ -182,172 +242,191 @@ export default function StudentDashboard() {
 
   // RENDER / UI
   // ------------------------------------------------------------------
-  return (
-    <div className="min-h-screen bg-zinc-50">
-      
-      {/* NAVBAR */}
-      <nav className="sticky top-0 z-20 px-8 py-4 bg-white border-b border-zinc-200">
-        <div className="flex items-center justify-between max-w-350 mx-auto">
-          <div className="flex items-center gap-2">
-            <Utensils className="w-6 h-6 text-blue-600" />
-            <h1 className="text-xl font-bold text-zinc-900">Student Portal</h1>
+return (
+  <div className="min-h-screen bg-[#FDFDFD] text-slate-900 font-sans selection:bg-blue-100">
+    
+    {/* PREMIUM GLASS NAVBAR */}
+    <nav className="sticky top-0 z-50 px-6 py-4 bg-white/70 backdrop-blur-xl border-b border-slate-200/60">
+      <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex items-center gap-3"
+        >
+          <div className="bg-gradient-to-tr from-blue-600 to-indigo-500 p-2 rounded-xl shadow-lg shadow-blue-200">
+            <Utensils className="w-5 h-5 text-white" />
           </div>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-sm font-medium text-red-600 transition-colors hover:text-red-700"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
-        </div>
-      </nav>
+          <span className="text-xl font-black tracking-tighter uppercase italic text-slate-800">
+            Mess<span className="text-blue-600">Pro</span>
+          </span>
+        </motion.div>
 
-      {/* MAIN LAYOUT GRID */}
-      <main className="max-w-350 mx-auto mt-8 px-8 pb-12">
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={handleLogout}
+          className="px-5 py-2 text-sm font-bold text-slate-600 hover:text-red-500 transition-colors flex items-center gap-2 bg-slate-100 rounded-full"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </motion.button>
+      </div>
+    </nav>
+
+    <main className="max-w-7xl mx-auto mt-12 px-6 pb-20">
+      
+      {/* PERSONALIZED HERO SECTION */}
+     <motion.header 
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  className="mb-12"
+>
+  <h2 className="text-5xl font-black tracking-tight text-slate-900 mb-2">
+    Hello, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+      {/* 1. Try studentName string. 2. Try parsing object. 3. Final fallback */}
+      {localStorage.getItem("studentName") || 
+       JSON.parse(localStorage.getItem("studentInfo") || "{}")?.name || 
+       "Student"}
+    </span>!
+  </h2>
+  <p className="text-slate-500 font-medium text-lg">Your meal schedule for the next 24 hours.</p>
+</motion.header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        
+        {/* LEFT COLUMN (8/12) */}
+        <div className="lg:col-span-8 space-y-10">
           
-          {/* LEFT AREA: Controls and Daily Meals */}
-          <div className="flex-1 space-y-6">
-            
-            {/* FREEZE ACCOUNT SECTION */}
-            <section
-              className={`p-6 border shadow-sm rounded-xl transition-colors ${
-                freezeInfo.isFrozen
-                  ? "bg-blue-50 border-blue-200" 
-                  : "bg-white border-zinc-200"   
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <Snowflake
-                  className={`w-5 h-5 ${freezeInfo.isFrozen ? "text-blue-600" : "text-zinc-500"}`}
-                />
-                <h2 className="text-lg font-semibold text-zinc-900">
-                  {freezeInfo.isFrozen
-                    ? "Account is Currently Frozen"
-                    : "Freeze Mess Account"}
-                </h2>
-              </div>
+          {/* MEAL CARDS SECTION */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {["lunch", "dinner"].map((meal, index) => {
+              const isAccepted = mealStatus[meal] === true;
+              const isRejected = mealStatus[meal] === false;
+              const mealLabel = getMealLabel(meal);
 
-              <form
-                onSubmit={toggleFreeze}
-                className="flex flex-col items-end gap-4 md:flex-row"
-              >
-                <div className="w-full flex-1">
-                  <label className="block mb-1 text-sm font-medium text-zinc-700">
-                    From Date
-                  </label>
-                  <input
-                    type="date"
-                    disabled={freezeInfo.isFrozen} 
-                    value={freezeInfo.fromDate}
-                    onChange={(e) =>
-                      setFreezeInfo({ ...freezeInfo, fromDate: e.target.value })
-                    }
-                    className="w-full p-2 border rounded-md bg-zinc-50 disabled:opacity-50"
-                  />
-                </div>
-                
-                <div className="w-full flex-1">
-                  <label className="block mb-1 text-sm font-medium text-zinc-700">
-                    To Date
-                  </label>
-                  <input
-                    type="date"
-                    disabled={freezeInfo.isFrozen} 
-                    value={freezeInfo.toDate}
-                    onChange={(e) =>
-                      setFreezeInfo({ ...freezeInfo, toDate: e.target.value })
-                    }
-                    className="w-full p-2 border rounded-md bg-zinc-50 disabled:opacity-50"
-                  />
-                </div>
-                
-                <button
-                  type="submit"
-                  className={`w-full md:w-auto px-6 py-2 font-medium text-white rounded-md transition-colors ${
-                    freezeInfo.isFrozen ? "bg-zinc-900 hover:bg-zinc-800" : "bg-blue-600 hover:bg-blue-700"
-                  }`}
+              return (
+                <motion.div
+                  key={meal}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ y: -5 }}
+                  className="relative group p-8 bg-white border border-slate-200 rounded-[2rem] shadow-sm hover:shadow-2xl hover:shadow-blue-100/50 transition-all duration-300 overflow-hidden"
                 >
-                  {freezeInfo.isFrozen ? "Unfreeze Now" : "Freeze Account"}
-                </button>
-              </form>
-            </section>
-
-            {/* DAILY BROADCAST CARDS */}
-            <div className="grid gap-6 md:grid-cols-2">
-              {["lunch", "dinner"].map((meal) => {
-                const isAccepted = mealStatus[meal] === true;
-                const isRejected = mealStatus[meal] === false;
-                const isUndecided = mealStatus[meal] === null;
-
-                return (
-                  <div
-                    key={meal}
-                    className="relative p-6 overflow-hidden bg-white border shadow-sm rounded-xl border-zinc-200"
-                  >
+                  <AnimatePresence>
                     {freezeInfo.isFrozen && (
-                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 backdrop-blur-[1px]">
-                        <span className="px-4 py-1.5 text-sm font-medium text-white rounded-full bg-zinc-900">
-                          Frozen
-                        </span>
-                      </div>
+                      <motion.div 
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-30 bg-white/40 backdrop-blur-md flex items-center justify-center"
+                      >
+                        <div className="bg-slate-900 text-white px-6 py-2 rounded-full font-bold text-xs tracking-widest uppercase flex items-center gap-2 shadow-2xl">
+                          <Snowflake className="w-4 h-4 animate-pulse" /> Account Frozen
+                        </div>
+                      </motion.div>
                     )}
+                  </AnimatePresence>
 
-                    <h3 className="mb-2 text-sm font-medium tracking-wider uppercase text-zinc-500">
-                      Today's {meal}
-                    </h3>
-                    <p className="mb-6 text-2xl font-bold text-zinc-900">
-                      {menu[meal]}
-                    </p>
+                  <div className="flex justify-between items-start mb-10">
+                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+                      {mealLabel}
+                    </span>
+                    {isAccepted && (
+                      <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="p-1 bg-green-500 rounded-full">
+                        <Check className="w-3 h-3 text-white" />
+                      </motion.div>
+                    )}
+                  </div>
 
+                  <h3 className="text-3xl font-bold text-slate-800 mb-10 leading-tight">
+                    {menu[meal]}
+                  </h3>
+
+                  <div className="space-y-3">
                     {isAccepted ? (
-                      <div className="flex items-center justify-center gap-2 py-3 font-medium text-green-700 bg-green-100 rounded-lg">
-                        <Check className="w-5 h-5" />
-                        Meal Accepted (Locked)
+                      <div className="w-full py-4 text-center font-bold text-green-600 bg-green-50/50 border border-green-100 rounded-2xl">
+                        Confirmed for Delivery
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-3">
-                        {isRejected && (
-                          <div className="flex items-center justify-center gap-2 py-2 font-medium text-red-700 bg-red-100 rounded-lg">
-                            <X className="w-5 h-5" />
-                            You rejected this meal
-                          </div>
+                      <div className="flex gap-3">
+                        <motion.button
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => handleMealDecision(meal, true)}
+                          className="flex-1 py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200"
+                        >
+                          {isRejected ? "Re-Accept" : "Accept Meal"}
+                        </motion.button>
+                        
+                        {mealStatus[meal] === null && (
+                          <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => handleMealDecision(meal, false)}
+                            className="flex-1 py-4 bg-slate-100 text-slate-500 font-bold rounded-2xl hover:bg-red-50 hover:text-red-500 transition-colors"
+                          >
+                            Skip
+                          </motion.button>
                         )}
-
-                        <div className="flex gap-3">
-                          {(isUndecided || isRejected) && (
-                            <button
-                              onClick={() => handleMealDecision(meal, true)}
-                              className="flex items-center justify-center flex-1 gap-2 py-2.5 font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
-                            >
-                              <Check className="w-4 h-4" /> {isRejected ? "Change to Accept" : "Accept"}
-                            </button>
-                          )}
-
-                          {isUndecided && (
-                            <button
-                              onClick={() => handleMealDecision(meal, false)}
-                              className="flex items-center justify-center flex-1 gap-2 py-2.5 font-medium text-zinc-700 bg-zinc-100 rounded-lg hover:bg-zinc-200"
-                            >
-                              <X className="w-4 h-4" /> Reject
-                            </button>
-                          )}
-                        </div>
                       </div>
                     )}
                   </div>
-                );
-              })}
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* FREEZE SECTION - MINIMALIST */}
+          <motion.section 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className={`p-10 rounded-[2.5rem] border transition-all duration-500 ${
+              freezeInfo.isFrozen ? "bg-blue-600 border-blue-400 shadow-2xl shadow-blue-200" : "bg-slate-50 border-slate-200"
+            }`}
+          >
+            <div className="flex items-center gap-5 mb-8">
+              <div className={`p-3 rounded-2xl shadow-sm ${freezeInfo.isFrozen ? "bg-white text-blue-600" : "bg-white text-slate-400"}`}>
+                <Snowflake className="w-6 h-6" />
+              </div>
+              <h3 className={`text-2xl font-bold ${freezeInfo.isFrozen ? "text-white" : "text-slate-800"}`}>
+                Mess Suspension
+              </h3>
+            </div>
+
+            <form onSubmit={toggleFreeze} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <p className={`text-[10px] font-black uppercase tracking-widest ${freezeInfo.isFrozen ? "text-blue-100" : "text-slate-400"}`}>Start Date</p>
+                <input type="date" value={freezeInfo.fromDate} disabled={freezeInfo.isFrozen} onChange={(e) => setFreezeInfo({...freezeInfo, fromDate: e.target.value})}
+                  className="w-full p-4 bg-white border-none rounded-2xl shadow-inner focus:ring-2 focus:ring-blue-400 transition-all outline-none" />
+              </div>
+              <div className="space-y-2">
+                <p className={`text-[10px] font-black uppercase tracking-widest ${freezeInfo.isFrozen ? "text-blue-100" : "text-slate-400"}`}>End Date</p>
+                <input type="date" value={freezeInfo.toDate} disabled={freezeInfo.isFrozen} onChange={(e) => setFreezeInfo({...freezeInfo, toDate: e.target.value})}
+                  className="w-full p-4 bg-white border-none rounded-2xl shadow-inner focus:ring-2 focus:ring-blue-400 transition-all outline-none" />
+              </div>
+              <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} type="submit"
+                className={`w-full py-4 font-black rounded-2xl transition-all shadow-xl ${
+                  freezeInfo.isFrozen ? "bg-white text-blue-600 hover:bg-slate-50" : "bg-slate-900 text-white hover:bg-blue-600 shadow-slate-200"
+                }`}>
+                {freezeInfo.isFrozen ? "ACTIVATE NOW" : "FREEZE ACCOUNT"}
+              </motion.button>
+            </form>
+          </motion.section>
+        </div>
+
+        {/* RIGHT COLUMN (4/12) */}
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+          className="lg:col-span-4"
+        >
+          <div className="sticky top-28 bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-xl shadow-slate-100">
+            <div className="p-6 bg-slate-900 text-white text-center font-black text-xs tracking-[0.3em] uppercase">
+              Weekly Cuisine
+            </div>
+            <div className="p-2">
+              <ReadOnlyWeeklyMenu />
             </div>
           </div>
+        </motion.div>
 
-          {/* RIGHT AREA: Weekly Menu Sidebar */}
-          <div className="w-full lg:w-100 lg:sticky lg:top-24 h-[calc(100vh-120px)] shrink-0">
-            <ReadOnlyWeeklyMenu />
-          </div>
-
-        </div>
-      </main>
-    </div>
-  );
+      </div>
+    </main>
+  </div>
+);
 }

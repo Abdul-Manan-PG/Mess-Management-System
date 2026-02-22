@@ -1,4 +1,4 @@
-import Student from '../models/Student.js';
+import Student from '../models/student.js';
 import csv from 'csvtojson';
 import bcrypt from 'bcryptjs';
 import fs from 'fs';

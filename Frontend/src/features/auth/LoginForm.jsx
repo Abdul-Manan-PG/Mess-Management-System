@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import { loginSchema } from "./authSchema.js";
-
+import axios from "axios";
 export default function LoginForm() {
   const navigate = useNavigate();
 
@@ -15,28 +15,60 @@ export default function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data) => {
+  // const onSubmit = async (data) => {
+  //   try {
+  //     // Simulate network request delay
+  //     await new Promise((resolve) => setTimeout(resolve, 1000));
+
+  //     // MOCK LOGIC: Determine role based on input
+  //     let userRole = "student";
+  //     if (data.identifier.toLowerCase() === "admin") {
+  //       userRole = "admin";
+  //     } else if (data.identifier.toLowerCase() === "manager") {
+  //       userRole = "manager";
+  //     }
+
+  //     // --- NEW CODE: Save the user session so ProtectedRoute can see it ---
+  //     localStorage.setItem("isAuthenticated", "true");
+  //     localStorage.setItem("role", userRole);
+  //     // ------------------------------------------------------------------
+
+  //     // Route the user to their specific dashboard
+  //     navigate(`/${userRole}-dashboard`, { replace: true });
+  //   } catch (error) {
+  //     console.log(error.message);
+  //     setError("root", { message: "Failed to sign in. Please try again." });
+  //   }
+  // };
+const onSubmit = async (data) => {
     try {
-      // Simulate network request delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // 1. Call your real Backend API
+      console.log(data.identifier)
+      const response = await axios.post("http://localhost:5000/api/auth/login", {
+        rollNumber: data.identifier, // Matching your backend expectation
+        password: data.password
+      });
 
-      // MOCK LOGIC: Determine role based on input
-      let userRole = "student";
-      if (data.identifier.toLowerCase() === "admin") {
-        userRole = "admin";
-      } else if (data.identifier.toLowerCase() === "manager") {
-        userRole = "manager";
-      }
+      // 2. Extract data from the successful response
+      const { token, student } = response.data;
 
-      // --- NEW CODE: Save the user session so ProtectedRoute can see it ---
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("role", userRole);
-      // ------------------------------------------------------------------
+      // 3. Save to LocalStorage
+      // This is the "Key Card" for the student's browser
+      localStorage.clear(); // Wipe old data
+      localStorage.setItem("studentToken", token);
+      localStorage.setItem("studentName", response.data.user.name);
+      localStorage.setItem("role", "student"); // You can expand this for admin/manager later
+      localStorage.setItem("studentInfo", JSON.stringify(student));
 
-      // Route the user to their specific dashboard
-      navigate(`/${userRole}-dashboard`, { replace: true });
+      // 4. Navigate to the dashboard
+     console.log("Login Success, navigating...");
+      navigate("/student-dashboard");
+
     } catch (error) {
-      setError("root", { message: "Failed to sign in. Please try again." });
+      // 5. Handle Errors (e.g., Wrong password or Student not found)
+      const errorMessage = error.response?.data?.message || "Failed to sign in. Please try again.";
+      setError("root", { message: errorMessage });
+      console.error("Login Error:", error);
     }
   };
 
