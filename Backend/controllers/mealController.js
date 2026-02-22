@@ -1,5 +1,29 @@
 import Attendance from '../models/attendence.js';
 import Menu from '../models/Menu.js'; // Assuming this holds your weekly menu
+import MealTiming from '../models/MealTiming.js';
+
+
+
+
+
+export const getMealTimings = async (req, res) => {
+  try {
+    // We find the first (and only) settings document
+    let timings = await MealTiming.findOne();
+    
+    // If no settings exist yet, we send the defaults
+    if (!timings) {
+      return res.status(200).json({
+        lunchEnd: "13:00",
+        dinnerEnd: "21:00"
+      });
+    }
+
+    res.status(200).json(timings);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error" });
+  }
+};
 
 export const getMealStatus = async (req, res) => {
     try {
@@ -68,3 +92,24 @@ export const updateMealStatus = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+
+// Function to SAVE or UPDATE timings from Admin panel
+export const updateMealTimings = async (req, res) => {
+    try {
+        const { lunchStart, lunchEnd, dinnerStart, dinnerEnd } = req.body;
+
+        // findOneAndUpdate with {} (empty object) finds the first document.
+        // { upsert: true } means "if it doesn't exist, create it".
+        const updatedTimings = await MealTiming.findOneAndUpdate(
+            {}, 
+            { lunchStart, lunchEnd, dinnerStart, dinnerEnd },
+            { upsert: true, new: true }
+        );
+
+        res.status(200).json(updatedTimings);
+    } catch (error) {
+        console.error("Error updating timings:", error);
+        res.status(500).json({ message: "Failed to update timings", error: error.message });
+    }
+};  

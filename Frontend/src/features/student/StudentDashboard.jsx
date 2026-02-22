@@ -8,137 +8,141 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function StudentDashboard() {
   const navigate = useNavigate();
 
-const getMealLabel = (mealType) => {
-  const currentHour = new Date().getHours();
-  if (mealType === "lunch") {
-    // Before 1 PM show Today, after 1 PM show Tomorrow
-    return currentHour >= 13 ? "Tomorrow's Lunch" : "Today's Lunch";
-  }
-  if (mealType === "dinner") {
-    // Before 9 PM show Today, after 9 PM show Tomorrow
-    return currentHour >= 21 ? "Tomorrow's Dinner" : "Today's Dinner";
-  }
-  return "Meal Info";
-};
-
-const getTargetDate = (mealType) => {
-  const now = new Date();
-  const currentHour = now.getHours();
-  const target = new Date();
-
-  if (mealType === 'lunch' && currentHour >= 13) {
-    target.setDate(now.getDate() + 1); // Switch to tomorrow after 1 PM
-  } else if (mealType === 'dinner' && currentHour >= 21) {
-    target.setDate(now.getDate() + 1); // Switch to tomorrow after 9 PM
-  }
-  
-  return target.toISOString().split('T')[0]; // Returns "YYYY-MM-DD"
-};
-
-  // STATE MANAGEMENT
+  // 1. HELPERS
   // ------------------------------------------------------------------
-  const [menu, setMenu] = useState({
-    lunch: "Loading...",
-    dinner: "Loading...",
-  });
+  const isPastTime = (endTimeString) => {
+    if (!endTimeString) return false;
+    const [endHour, endMinute] = endTimeString.split(':').map(Number);
+    const now = new Date();
+    return now.getHours() > endHour || (now.getHours() === endHour && now.getMinutes() >= endMinute);
+  };
 
+  const getMealLabel = (mealType, endTimeFromDB) => {
+    if (!endTimeFromDB) return "Meal Info";
+    const pastCutoff = isPastTime(endTimeFromDB);
+
+    if (mealType === "lunch") return pastCutoff ? "Tomorrow's Lunch" : "Today's Lunch";
+    if (mealType === "dinner") return pastCutoff ? "Tomorrow's Dinner" : "Today's Dinner";
+    return "Meal Info";
+  };
+
+  // 2. STATE MANAGEMENT
+  // ------------------------------------------------------------------
+  const [timings, setTimings] = useState({ lunchEnd: "", dinnerEnd: "" });
+  const [menu, setMenu] = useState({ lunch: "Loading...", dinner: "Loading..." });
   const [mealStatus, setMealStatus] = useState({ lunch: null, dinner: null });
-  
-  const [freezeInfo, setFreezeInfo] = useState({
-    isFrozen: false,
-    fromDate: "",
-    toDate: "",
-  });
+  const [freezeInfo, setFreezeInfo] = useState({ isFrozen: false, fromDate: "", toDate: "" });
 
-  // DATA FETCHING ON COMPONENT MOUNT
+  // 3. DATA FETCHING
   // ------------------------------------------------------------------
-  /**
-   * @BACKEND_API_CONTRACT - GET Requests on Load
-   * * 1. GET /student/get-freeze-status
-   * Headers: { "Authorization": "Bearer <token>" }
-   * EXPECTED RESPONSE (JSON):
-   * {
-   * "freeze-status": true | null,
-   * "starting date": "YYYY-MM-DD" | null,
-   * "ending date": "YYYY-MM-DD" | null
-   * }
-   * * 2. GET /student/meal-status
-   * Headers: { "Authorization": "Bearer <token>" }
-   * EXPECTED RESPONSE (JSON):
-   * {
-   * "lunch-status": true | false | null,
-   * "lunch": "String (e.g., Chicken Biryani)",
-   * "dinner-status": true | false | null,
-   * "dinner": "String (e.g., Daal Mash & Roti)"
-   * }
-   */
-useEffect(() => {
+//  useEffect(() => {
+//   const fetchDashboardData = async () => {
+//     try {
+//       const token = localStorage.getItem("studentToken");
+//       const headers = { Authorization: `Bearer ${token}` };
+
+//       // --- STEP A: Get Timings FIRST ---
+//       // We need these timings to know which dates to fetch next
+//       const timingRes = await axios.get("http://localhost:5000/api/student/meal-timings", { headers });
+//       const { lunchEnd, dinnerEnd } = timingRes.data;
+      
+//       // Update state so the UI (labels) can use them
+//       setTimings({ lunchEnd, dinnerEnd });
+
+//       // --- STEP B: Calculate Dates based on Timings ---
+//       const getDynamicTargetDate = (endTimeString) => {
+//         const target = new Date();
+//         // If current time is past the end time, target tomorrow
+//         if (isPastTime(endTimeString)) {
+//           target.setDate(target.getDate() + 1);
+//         }
+//         return target.toISOString().split('T')[0];
+//       };
+
+//       const lunchDate = getDynamicTargetDate(lunchEnd);
+//       const dinnerDate = getDynamicTargetDate(dinnerEnd);
+
+//       // --- STEP C: Fetch Meal and Freeze Status ---
+//       // Now that we have lunchDate and dinnerDate, we can fetch the rest
+//       const [freezeRes, mealRes] = await Promise.all([
+//         axios.get("http://localhost:5000/api/student/get-freeze-status", { headers }),
+//         axios.get("http://localhost:5000/api/student/meal-status", { 
+//           headers, 
+//           params: { lunchDate, dinnerDate } 
+//         }),
+//       ]);
+
+//       // --- STEP D: Update States ---
+//       setFreezeInfo({
+//         isFrozen: freezeRes.data["freeze-status"],
+//         fromDate: freezeRes.data["starting date"],
+//         toDate: freezeRes.data["ending date"],
+//       });
+
+//       setMenu({
+//         lunch: mealRes.data.lunch || "Not specified",
+//         dinner: mealRes.data.dinner || "Not specified",
+//       });
+
+//       setMealStatus({
+//         lunch: mealRes.data["lunch-status"],
+//         dinner: mealRes.data["dinner-status"],
+//       });
+
+//     } catch (error) {
+//       console.error("Dashboard Sync Error:", error);
+//     }
+//   };
+
+//   fetchDashboardData();
+// }, []);
+ useEffect(() => {
   const fetchDashboardData = async () => {
     try {
-      // Use the correct token key from your local storage
-      const token = localStorage.getItem("studentToken"); 
+      const token = localStorage.getItem("studentToken");
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Helper to calculate the "Target Date" based on cutoff times
-      const getTargetDate = (mealType) => {
-        const now = new Date();
-        const currentHour = now.getHours();
-        const target = new Date();
+      // Step A: Get Timings
+      const timingRes = await axios.get("http://localhost:5000/api/student/meal-timings", { headers });
+      const { lunchEnd, dinnerEnd } = timingRes.data;
+      setTimings({ lunchEnd, dinnerEnd });
 
-        if (mealType === 'lunch' && currentHour >= 13) {
-          // After 1 PM, target tomorrow's lunch
-          target.setDate(now.getDate() + 1);
-        } else if (mealType === 'dinner' && currentHour >= 21) {
-          // After 9 PM, target tomorrow's dinner
-          target.setDate(now.getDate() + 1);
+      // Step B: Calculate Dates
+      const getDynamicTargetDate = (endTimeString) => {
+        const target = new Date();
+        if (isPastTime(endTimeString)) {
+          target.setDate(target.getDate() + 1);
         }
-        
-        return target.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+        return target.toISOString().split('T')[0];
       };
 
-      const lunchDate = getTargetDate('lunch');
-      const dinnerDate = getTargetDate('dinner');
+      const lunchDate = getDynamicTargetDate(lunchEnd);
+      const dinnerDate = getDynamicTargetDate(dinnerEnd);
 
-      // Fetch both Freeze status and the specific Meal statuses for those dates
-      const [freezeRes, mealRes] = await Promise.all([
-        axios.get("/http://localhost:5000/api/student/get-freeze-status", { headers }),
-        axios.get("http://localhost:5000/api/student/meal-status", { 
-          headers,
-          params: { lunchDate, dinnerDate } // Sending specific dates to backend
-        }),
-      ]);
+      // Step C: Fetch ONLY Meal Status (Removed Freeze status call)
+      const mealRes = await axios.get("http://localhost:5000/api/student/meal-status", { 
+        headers, 
+        params: { lunchDate, dinnerDate } 
+      });
 
-      // 1. Process Freeze Status
-      const freezeData = freezeRes.data;
-      if (freezeData["freeze-status"] === true) {
-        setFreezeInfo({
-          isFrozen: true,
-          fromDate: freezeData["starting date"] || "",
-          toDate: freezeData["ending date"] || "",
-        });
-      }
-
-      // 2. Process Meal Status (Lunch and Dinner)
-      const mealData = mealRes.data;
+      // Step D: Update States
       setMenu({
-        lunch: mealData.lunch || "Not specified",
-        dinner: mealData.dinner || "Not specified",
+        lunch: mealRes.data.lunch || "Not specified",
+        dinner: mealRes.data.dinner || "Not specified",
       });
 
-      // Update the status (Accepted/Rejected/Null) for the calculated target dates
       setMealStatus({
-        lunch: mealData["lunch-status"], 
-        dinner: mealData["dinner-status"], 
+        lunch: mealRes.data["lunch-status"],
+        dinner: mealRes.data["dinner-status"],
       });
-      
+
     } catch (error) {
-      console.error("Failed to fetch dashboard data:", error);
+      console.error("Meal Display Error:", error);
     }
   };
 
   fetchDashboardData();
 }, []);
- 
   // HANDLERS
   // ------------------------------------------------------------------
   
@@ -160,25 +164,40 @@ useEffect(() => {
    * * EXPECTED RESPONSE: 
    * 200 OK status. Response body is not strictly used by frontend. 
    */
- const handleMealDecision = async (mealType, decision) => {
+const handleMealDecision = async (mealType, decision) => {
   try {
-    const targetDate = getTargetDate(mealType); // Identify if voting for today or tomorrow
-    const token = localStorage.getItem("studentToken"); // Use your new JWT token name
+    const token = localStorage.getItem("studentToken");
     const headers = { Authorization: `Bearer ${token}` };
 
+    // 1. Get the correct end-time based on the meal type
+    const endTime = mealType === "lunch" ? timings.lunchEnd : timings.dinnerEnd;
+
+    // 2. Calculate the target date dynamically using your logic
+    const target = new Date();
+    if (isPastTime(endTime)) {
+      target.setDate(target.getDate() + 1);
+    }
+    const targetDate = target.toISOString().split('T')[0];
+
+    // 3. Send to Backend
+    // Added full URL to match your other axios calls
     await axios.post(
-      "/student/update-meal-status",
+      "http://localhost:5000/api/student/update-meal-status",
       { 
         mealType,    // 'lunch' or 'dinner'
-        decision,    // true or false
+        decision,    // true (Accept) or false (Reject)
         date: targetDate 
       },
       { headers }
     );
 
+    // 4. Update UI State immediately
     setMealStatus((prev) => ({ ...prev, [mealType]: decision }));
+    
+    console.log(`Successfully marked ${mealType} as ${decision} for ${targetDate}`);
   } catch (error) {
     console.error("Error updating meal:", error);
+    alert("Failed to update meal status. Please try again.");
   }
 };
   /**

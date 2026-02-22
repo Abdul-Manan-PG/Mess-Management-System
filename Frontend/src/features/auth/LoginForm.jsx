@@ -41,36 +41,36 @@ export default function LoginForm() {
   //   }
   // };
 const onSubmit = async (data) => {
-    try {
-      // 1. Call your real Backend API
-      console.log(data.identifier)
-      const response = await axios.post("http://localhost:5000/api/auth/login", {
-        rollNumber: data.identifier, // Matching your backend expectation
-        password: data.password
-      });
+  try {
+    const response = await axios.post("http://localhost:5000/api/auth/login", {
+      rollNumber: data.identifier, 
+      password: data.password
+    });
 
-      // 2. Extract data from the successful response
-      const { token, student } = response.data;
+    const { token, user } = response.data;
 
-      // 3. Save to LocalStorage
-      // This is the "Key Card" for the student's browser
-      localStorage.clear(); // Wipe old data
-      localStorage.setItem("studentToken", token);
-      localStorage.setItem("studentName", response.data.user.name);
-      localStorage.setItem("role", "student"); // You can expand this for admin/manager later
-      localStorage.setItem("studentInfo", JSON.stringify(student));
+    // Save data
+    localStorage.clear();
+    localStorage.setItem("studentToken", token);
+    localStorage.setItem("studentName", user.name);
+    localStorage.setItem("userRole", user.role); // Save the role!
+    localStorage.setItem("studentInfo", JSON.stringify(user));
 
-      // 4. Navigate to the dashboard
-     console.log("Login Success, navigating...");
+    // Redirect based on the role from the database
+    console.log(user.role);
+    if (user.role === "manager") {
+      navigate("/manager-dashboard");
+    } else if (user.role === "admin") {
+      navigate("/admin-dashboard");
+    } else {
       navigate("/student-dashboard");
-
-    } catch (error) {
-      // 5. Handle Errors (e.g., Wrong password or Student not found)
-      const errorMessage = error.response?.data?.message || "Failed to sign in. Please try again.";
-      setError("root", { message: errorMessage });
-      console.error("Login Error:", error);
     }
-  };
+
+  } catch (error) {
+    const errorMessage = error.response?.data?.message || "Login failed";
+    setError("root", { message: errorMessage });
+  }
+};
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-zinc-50">
