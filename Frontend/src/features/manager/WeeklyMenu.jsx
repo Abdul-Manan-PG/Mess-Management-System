@@ -88,7 +88,7 @@ export default function WeeklyMenu() {
   // 4. UI: Error State
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[400px] bg-white border shadow-sm rounded-xl border-zinc-200 p-6 text-center space-y-4">
+      <div className="flex flex-col items-center justify-center h-full min-h-100 bg-white border shadow-sm rounded-xl border-zinc-200 p-6 text-center space-y-4">
         <AlertCircle className="w-10 h-10 text-red-500" />
         <div className="space-y-1">
           <h3 className="text-lg font-semibold text-zinc-900">

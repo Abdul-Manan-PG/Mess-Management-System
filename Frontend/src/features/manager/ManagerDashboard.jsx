@@ -43,7 +43,7 @@ export default function ManagerDashboard() {
 
           {/* RIGHT AREA: Weekly Menu Sidebar */}
           {/* Automatically handles width on mobile, locks to 400px on desktop */}
-          <div className="w-full lg:w-[400px] lg:sticky lg:top-24 shrink-0">
+          <div className="w-full lg:w-100 lg:sticky lg:top-24 shrink-0">
             <WeeklyMenu />
           </div>
         </div>

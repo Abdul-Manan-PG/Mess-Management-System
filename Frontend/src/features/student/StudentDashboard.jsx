@@ -187,7 +187,7 @@ export default function StudentDashboard() {
       
       {/* NAVBAR */}
       <nav className="sticky top-0 z-20 px-8 py-4 bg-white border-b border-zinc-200">
-        <div className="flex items-center justify-between max-w-[1400px] mx-auto">
+        <div className="flex items-center justify-between max-w-350 mx-auto">
           <div className="flex items-center gap-2">
             <Utensils className="w-6 h-6 text-blue-600" />
             <h1 className="text-xl font-bold text-zinc-900">Student Portal</h1>
@@ -203,7 +203,7 @@ export default function StudentDashboard() {
       </nav>
 
       {/* MAIN LAYOUT GRID */}
-      <main className="max-w-[1400px] mx-auto mt-8 px-8 pb-12">
+      <main className="max-w-350 mx-auto mt-8 px-8 pb-12">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
           
           {/* LEFT AREA: Controls and Daily Meals */}
@@ -342,7 +342,7 @@ export default function StudentDashboard() {
           </div>
 
           {/* RIGHT AREA: Weekly Menu Sidebar */}
-          <div className="w-full lg:w-[400px] lg:sticky lg:top-24 h-[calc(100vh-120px)] shrink-0">
+          <div className="w-full lg:w-100 lg:sticky lg:top-24 h-[calc(100vh-120px)] shrink-0">
             <ReadOnlyWeeklyMenu />
           </div>
 
