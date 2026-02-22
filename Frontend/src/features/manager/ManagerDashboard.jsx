@@ -2,8 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { Utensils, LogOut } from "lucide-react";
 
 // Import our separated components
-import LiveCounts from "./components/LiveCounts";
-import WeeklyMenu from "./components/WeeklyMenu";
+import LiveCounts from "./LiveCounts";
+import WeeklyMenu from "./WeeklyMenu";
 
 export default function ManagerDashboard() {
   const navigate = useNavigate();
