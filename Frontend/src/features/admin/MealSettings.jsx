@@ -175,10 +175,10 @@ import axios from 'axios';
 
 export default function MealSettings() {
   const [timings, setTimings] = useState({
-    lunchStart: "11:00",
-    lunchEnd: "14:00",
-    dinnerStart: "18:00",
-    dinnerEnd: "21:00"
+    lunchStart: "",
+    lunchEnd: "",
+    dinnerStart: "",
+    dinnerEnd: ""
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
