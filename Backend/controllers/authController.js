@@ -11,7 +11,7 @@ export const studentLogin = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    console.log(user)
+    console.log(user) // Should be removed in production, but useful for debugging to see the user object
    let isMatch = false;
 
 if (user.role === 'admin' || user.role === 'manager') {
