@@ -49,7 +49,7 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#FDFDFD] font-sans selection:bg-blue-100">
+    <div className="flex min-h-screen bg-[#F8F9FA] font-sans selection:bg-blue-100">
       
       {/* LEFT SIDE - BRANDING (Hidden on small screens) */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-12 overflow-hidden flex-col justify-between">

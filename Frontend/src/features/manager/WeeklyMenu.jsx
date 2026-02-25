@@ -50,7 +50,13 @@ export default function WeeklyMenu() {
       });
     } catch (err) {
       console.error("Error fetching menu:", err);
-      setError(true);
+      // FIX: If the backend says "Not Found" (404), it just means the menu 
+      // hasn't been created yet. Do NOT show the error screen, let them see the empty form!
+      if (err.response && err.response.status === 404) {
+        setError(false); 
+      } else {
+        setError(true); // Only show the hard error screen for real network/server crashes
+      }
     } finally {
       setLoading(false);
     }
@@ -75,7 +81,6 @@ export default function WeeklyMenu() {
         "http://localhost:5000/api/manager/update-menu",
         weekMenu
       );
-      // Optional: Add a toast notification here in a real app
       alert(response.data.message || "Menu saved successfully");
     } catch (error) {
       console.error("Save Error:", error);

@@ -18,7 +18,15 @@ export default function ReadOnlyWeeklyMenu() {
       setWeekMenu(response.data);
     } catch (error) {
       console.error("Error fetching menu:", error);
-      setError(true);
+      // FIX: If the backend returns a 404, it just means the menu is empty.
+      // We set error to false so it falls through to the "!weekMenu" fallback screen.
+      if (error.response && error.response.status === 404) {
+        setError(false);
+        setWeekMenu(null); 
+      } else {
+        // Only trigger the red error screen for actual server crashes/network failures
+        setError(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -72,9 +80,9 @@ export default function ReadOnlyWeeklyMenu() {
   }
 
   // 3. FALLBACK STATE
-  if (!weekMenu) {
+  if (!weekMenu || Object.keys(weekMenu).length === 0) {
     return (
-      <div className="p-10 text-center font-bold text-slate-400 bg-slate-50 rounded-3xl m-2 border border-slate-100">
+      <div className="p-10 text-center font-bold text-slate-400 bg-slate-50 rounded-3xl m-2 border border-slate-100 flex flex-col items-center justify-center min-h-[400px]">
         Menu hasn't been posted yet.
       </div>
     );

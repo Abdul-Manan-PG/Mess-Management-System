@@ -17,7 +17,7 @@ export default function ManagerDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] text-slate-900 font-sans selection:bg-orange-100">
+    <div className="min-h-screen bg-[#F8F9FA] text-slate-900 font-sans selection:bg-orange-100">
       
       {/* PREMIUM GLASS NAVBAR */}
       <nav className="sticky top-0 z-50 px-6 py-4 bg-white/70 backdrop-blur-xl border-b border-slate-200/60">
@@ -56,7 +56,7 @@ export default function ManagerDashboard() {
       {/* Main Layout Container */}
       <main className="max-w-7xl mx-auto mt-12 px-6 pb-20">
         
-        {/* HERO SECTION (Matches Student Dashboard) */}
+        {/* HERO SECTION */}
         <motion.header 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -65,32 +65,32 @@ export default function ManagerDashboard() {
           <h2 className="text-5xl font-black tracking-tight text-slate-900 mb-2">
             Manager <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-500">Portal</span>
           </h2>
-          <p className="text-slate-500 font-medium text-lg">Monitor live acceptance and manage the weekly cuisine.</p>
+          <p className="text-slate-500 font-medium text-lg">Manage the weekly cuisine and monitor live acceptance.</p>
         </motion.header>
 
-        {/* 12-Column Grid (Matches Student Dashboard Layout) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* 12-Column Grid */}
+        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-10">
           
-          {/* LEFT AREA: Live Counts (8/12 columns) */}
+          {/* LEFT AREA: Live Counts (4/12 columns, sticky on desktop, TOP on mobile) */}
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }} 
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="lg:col-span-4"
+          >
+            <div className="lg:sticky lg:top-28">
+              <LiveCounts />
+            </div>
+          </motion.div>
+
+          {/* RIGHT AREA: Weekly Menu (8/12 columns for massive editing space) */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.2 }}
             className="lg:col-span-8 min-w-0"
           >
-            <LiveCounts />
-          </motion.div>
-
-          {/* RIGHT AREA: Weekly Menu Sidebar (4/12 columns) */}
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }} 
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="lg:col-span-4"
-          >
-            <div className="sticky top-28">
-              <WeeklyMenu />
-            </div>
+            <WeeklyMenu />
           </motion.div>
           
         </div>

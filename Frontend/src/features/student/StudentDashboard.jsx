@@ -262,7 +262,7 @@ const handleMealDecision = async (mealType, decision) => {
   // RENDER / UI
   // ------------------------------------------------------------------
 return (
-  <div className="min-h-screen bg-[#FDFDFD] text-slate-900 font-sans selection:bg-blue-100">
+  <div className="min-h-screen bg-[#F8F9FA] text-slate-900 font-sans selection:bg-blue-100">
     
     {/* PREMIUM GLASS NAVBAR */}
     <nav className="sticky top-0 z-50 px-6 py-4 bg-white/70 backdrop-blur-xl border-b border-slate-200/60">
