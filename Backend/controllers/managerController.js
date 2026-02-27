@@ -1,5 +1,5 @@
 import Menu from '../models/Menu.js'
-
+import DailyCounts from '../models/DailyCounts.js';
 
 export const updateWeeklyMenu=async (req,res)=>{
     try {
@@ -35,4 +35,24 @@ export const getWeeklyMenu = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+
+export const getDailyCounts = async (req, res) => {
+    try {
+        // Get today's date in YYYY-MM-DD format
+        const today = new Date().toISOString().split('T')[0];
+
+        // Find the document for today
+        const counts = await DailyCounts.findOne({ date: today });
+
+        // If it exists, send the real numbers. If not, send 0.
+        res.status(200).json({
+            lunch: counts ? counts.lunch : 0,
+            dinner: counts ? counts.dinner : 0
+        });
+    } catch (error) {
+        console.error("Error in getDailyCounts:", error);
+        res.status(500).json({ message: "Server Error fetching counts" });
+    }
 };
