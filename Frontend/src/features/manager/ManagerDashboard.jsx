@@ -28,7 +28,7 @@ export default function ManagerDashboard() {
             className="flex items-center gap-3"
           >
             {/* Manager Accent: Orange/Amber Gradient */}
-            <div className="bg-gradient-to-tr from-orange-600 to-amber-500 p-2 rounded-xl shadow-lg shadow-orange-200">
+            <div className="bg-gradient-to-tr from-orange-600 to-amber-500 p-2 rounded-xl">
               <Utensils className="w-5 h-5 text-white" />
             </div>
             <div className="flex items-baseline gap-2">

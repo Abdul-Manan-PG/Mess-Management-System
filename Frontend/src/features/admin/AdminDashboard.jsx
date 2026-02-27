@@ -37,7 +37,7 @@ export default function AdminDashboard() {
             className="flex items-center gap-3"
           >
             {/* Admin Accent: Emerald/Teal Gradient */}
-            <div className="bg-gradient-to-tr from-emerald-600 to-teal-500 p-2 rounded-xl shadow-lg shadow-emerald-200">
+            <div className="bg-gradient-to-tr from-emerald-600 to-teal-500 p-2 rounded-xl">
               <ShieldCheck className="w-5 h-5 text-white" />
             </div>
             <div className="flex items-baseline gap-2">

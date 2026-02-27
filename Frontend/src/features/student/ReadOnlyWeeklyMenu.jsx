@@ -1,9 +1,17 @@
-import { useState, useEffect } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
-import { motion } from 'framer-motion';
-import axios from 'axios';
+import { useState, useEffect } from "react";
+import { AlertCircle, RefreshCw } from "lucide-react";
+import { motion } from "framer-motion";
+import axios from "axios";
 
-const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAYS_OF_WEEK = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
 
 export default function ReadOnlyWeeklyMenu() {
   const [weekMenu, setWeekMenu] = useState(null);
@@ -14,7 +22,9 @@ export default function ReadOnlyWeeklyMenu() {
     setLoading(true);
     setError(false);
     try {
-      const response = await axios.get('http://localhost:5000/api/manager/get-menu');
+      const response = await axios.get(
+        "http://localhost:5000/api/manager/get-menu",
+      );
       setWeekMenu(response.data);
     } catch (error) {
       console.error("Error fetching menu:", error);
@@ -22,7 +32,7 @@ export default function ReadOnlyWeeklyMenu() {
       // We set error to false so it falls through to the "!weekMenu" fallback screen.
       if (error.response && error.response.status === 404) {
         setError(false);
-        setWeekMenu(null); 
+        setWeekMenu(null);
       } else {
         // Only trigger the red error screen for actual server crashes/network failures
         setError(true);
@@ -44,8 +54,12 @@ export default function ReadOnlyWeeklyMenu() {
           <AlertCircle className="w-8 h-8" />
         </div>
         <div className="space-y-2">
-          <h3 className="text-xl font-black text-slate-900 tracking-tight">Connection Failed</h3>
-          <p className="text-sm font-medium text-slate-500">Unable to retrieve the weekly menu from the server.</p>
+          <h3 className="text-xl font-black text-slate-900 tracking-tight">
+            Connection Failed
+          </h3>
+          <p className="text-sm font-medium text-slate-500">
+            Unable to retrieve the weekly menu from the server.
+          </p>
         </div>
         <motion.button
           whileHover={{ y: -3 }}
@@ -66,7 +80,10 @@ export default function ReadOnlyWeeklyMenu() {
       <div className="flex flex-col h-full bg-transparent">
         <div className="flex-1 p-2 overflow-y-auto space-y-4 custom-scrollbar h-[500px]">
           {DAYS_OF_WEEK.map((day) => (
-            <div key={day} className="p-5 rounded-3xl bg-slate-50 animate-pulse border border-slate-100">
+            <div
+              key={day}
+              className="p-5 rounded-3xl bg-slate-50 animate-pulse border border-slate-100"
+            >
               <div className="w-24 h-3 mb-5 bg-slate-200 rounded-full"></div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="h-16 bg-white rounded-2xl shadow-sm"></div>
@@ -94,7 +111,7 @@ export default function ReadOnlyWeeklyMenu() {
       {/* Scrollable area optimized for the sticky parent container */}
       <div className="flex-1 p-2 overflow-y-auto space-y-4 custom-scrollbar h-[600px] pr-3">
         {DAYS_OF_WEEK.map((day, index) => (
-          <motion.div 
+          <motion.div
             key={day}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -105,7 +122,7 @@ export default function ReadOnlyWeeklyMenu() {
             <h3 className="mb-4 text-[11px] font-black tracking-[0.2em] text-slate-400 group-hover:text-blue-500 transition-colors uppercase">
               {day}
             </h3>
-            
+
             {/* Meal Boxes */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="p-3.5 bg-white rounded-2xl shadow-sm shadow-slate-200/50 border border-slate-100/50">
@@ -113,20 +130,19 @@ export default function ReadOnlyWeeklyMenu() {
                   Lunch
                 </span>
                 <span className="text-sm font-bold text-slate-800 leading-tight block">
-                  {weekMenu[day]?.lunch || 'N/A'}
+                  {weekMenu[day]?.lunch || "N/A"}
                 </span>
               </div>
-              
+
               <div className="p-3.5 bg-white rounded-2xl shadow-sm shadow-slate-200/50 border border-slate-100/50">
                 <span className="block mb-1.5 text-[9px] font-black text-indigo-500 uppercase tracking-widest">
                   Dinner
                 </span>
                 <span className="text-sm font-bold text-slate-800 leading-tight block">
-                  {weekMenu[day]?.dinner || 'N/A'}
+                  {weekMenu[day]?.dinner || "N/A"}
                 </span>
               </div>
             </div>
-            
           </motion.div>
         ))}
       </div>
