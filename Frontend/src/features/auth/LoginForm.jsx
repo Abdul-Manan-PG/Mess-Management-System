@@ -5,6 +5,7 @@ import { loginSchema } from "./authSchema.js";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { Utensils, Lock, User, Loader2, AlertCircle } from "lucide-react";
+const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function LoginForm() {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ export default function LoginForm() {
 
   const onSubmit = async (data) => {
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", {
+      const response = await axios.post(`${API_URL}/api/auth/login`, {
         rollNumber: data.identifier,
         password: data.password
       });

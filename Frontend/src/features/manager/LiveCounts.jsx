@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Users, Utensils, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
+const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function LiveCounts() {
   const [counts, setCounts] = useState({ lunch: 0, dinner: 0 });
@@ -12,7 +13,7 @@ export default function LiveCounts() {
     // 1. Initial Fetch
     const fetchInitialCounts = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/manager/counts');
+        const response = await axios.get(`${API_URL}/api/manager/counts`);
         setCounts(response.data);
       } catch (err) {
         console.error("Error fetching initial counts:", err);
@@ -25,7 +26,7 @@ export default function LiveCounts() {
     fetchInitialCounts();
 
     // 2. WebSockets for Live Updates
-    const socket = io('http://localhost:5000'); 
+    const socket = io(API_URL); 
 
     socket.on('connect', () => {
       console.log('Connected to live socket server');

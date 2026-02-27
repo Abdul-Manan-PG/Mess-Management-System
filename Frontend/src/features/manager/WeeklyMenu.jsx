@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { CalendarDays, Save, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
 import axios from "axios";
 import { motion } from "framer-motion";
+const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 const DAYS_OF_WEEK = [
   "Monday",
@@ -32,7 +33,7 @@ export default function WeeklyMenu() {
     setError(false);
     try {
       const response = await axios.get(
-        "http://localhost:5000/api/manager/get-menu"
+        `${API_URL}/api/manager/get-menu`
       );
 
       const fetchedMenu = response.data;
@@ -78,7 +79,7 @@ export default function WeeklyMenu() {
     setIsSaving(true);
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/manager/update-menu",
+        `${API_URL}/api/manager/update-menu`,
         weekMenu
       );
       alert(response.data.message || "Menu saved successfully");

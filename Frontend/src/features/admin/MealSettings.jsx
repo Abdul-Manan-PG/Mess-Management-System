@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Clock, Loader2, Save, Utensils, CheckCircle2, AlertCircle } from 'lucide-react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
+const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function MealSettings() {
   const [timings, setTimings] = useState({
@@ -16,7 +17,7 @@ export default function MealSettings() {
   useEffect(() => {
     const fetchCurrentTimings = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/student/meal-timings");
+        const res = await axios.get(`${API_URL}/api/student/meal-timings`);
         if (res.data && res.data.lunchStart) {
           setTimings(res.data);
         }
@@ -31,7 +32,7 @@ export default function MealSettings() {
     setLoading(true);
     setMessage("");
     try {
-      await axios.post("http://localhost:5000/api/admin/update-timings", timings);
+      await axios.post(`${API_URL}/api/admin/update-timings`, timings);
       setMessage("✅ Timings updated successfully!");
       setTimeout(() => setMessage(""), 3000);
     } catch (err) {

@@ -4,6 +4,7 @@ import { Utensils, LogOut, Check, X, Snowflake } from "lucide-react";
 import axios from "axios";
 import ReadOnlyWeeklyMenu from "./ReadOnlyWeeklyMenu";
 import { motion, AnimatePresence } from "framer-motion";
+const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -103,7 +104,7 @@ export default function StudentDashboard() {
       const headers = { Authorization: `Bearer ${token}` };
 
       // Step A: Get Timings
-      const timingRes = await axios.get("http://localhost:5000/api/student/meal-timings", { headers });
+      const timingRes = await axios.get(`${API_URL}/api/student/meal-timings`, { headers });
       const { lunchEnd, dinnerEnd } = timingRes.data;
       setTimings({ lunchEnd, dinnerEnd });
 
@@ -120,7 +121,7 @@ export default function StudentDashboard() {
       const dinnerDate = getDynamicTargetDate(dinnerEnd);
 
       // Step C: Fetch ONLY Meal Status (Removed Freeze status call)
-      const mealRes = await axios.get("http://localhost:5000/api/student/meal-status", { 
+      const mealRes = await axios.get(`${API_URL}/api/student/meal-status`, { 
         headers, 
         params: { lunchDate, dinnerDate } 
       });
@@ -182,7 +183,7 @@ const handleMealDecision = async (mealType, decision) => {
     // 3. Send to Backend
     // Added full URL to match your other axios calls
     await axios.post(
-      "http://localhost:5000/api/student/update-meal-status",
+      `${API_URL}/api/student/update-meal-status`,
       { 
         mealType,    // 'lunch' or 'dinner'
         decision,    // true (Accept) or false (Reject)

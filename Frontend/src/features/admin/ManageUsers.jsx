@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Upload, UserPlus, FileSpreadsheet, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
+const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function ManageUsers() {
   const { register, handleSubmit, reset } = useForm();
@@ -14,7 +15,7 @@ export default function ManageUsers() {
   const onManualSubmit = async (data) => {
     setIsSubmitting(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/admin/add-student', data);
+      const response = await axios.post(`${API_URL}/api/admin/add-student`, data);
       alert(response.data.message);
       reset();
     } catch (error) {
@@ -34,7 +35,7 @@ export default function ManageUsers() {
     formData.append('file', file);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/admin/upload-students', formData, {
+      const response = await axios.post(`${API_URL}/api/admin/upload-students`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
