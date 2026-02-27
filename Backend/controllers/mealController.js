@@ -3,7 +3,8 @@ import Menu from '../models/Menu.js'; // Assuming this holds your weekly menu
 import MealTiming from '../models/MealTiming.js';
 
 
-
+// controllers/mealController.js
+import DailyCount from '../models/DailyCount.js';
 
 
 export const getMealTimings = async (req, res) => {
@@ -75,24 +76,70 @@ export const getMealStatus = async (req, res) => {
     }
 };
 
-export const updateMealStatus = async (req, res) => {
-    try {
-        const { mealType, decision, date } = req.body;
-        const studentId = req.user.id;
+// export const updateMealStatus = async (req, res) => {
+//     try {
+//         const { mealType, decision, date } = req.body;
+//         const studentId = req.user.id;
 
-        // Update existing record or create a new one (Upsert)
+//         // Update existing record or create a new one (Upsert)
+//         await Attendance.findOneAndUpdate(
+//             { studentId, date, mealType },
+//             { status: decision },
+//             { upsert: true, new: true }
+//         );
+
+//         res.status(200).json({ message: "Status updated successfully" });
+//     } catch (error) {
+//         res.status(500).json({ message: error.message });
+//     }
+// };
+
+
+
+
+export const updateMealStatus = async (req, res) => {
+    const { mealType, decision, date } = req.body; // 'lunch' or 'dinner'
+    const studentId = req.user.id;
+
+    try {
+        // 1. Find existing record to see if we are changing an existing vote
+        const existingRecord = await Attendance.findOne({ studentId, date, mealType });
+        
+        // 2. Update Student Attendance Record
         await Attendance.findOneAndUpdate(
             { studentId, date, mealType },
             { status: decision },
-            { upsert: true, new: true }
+            { upsert: true }
         );
 
-        res.status(200).json({ message: "Status updated successfully" });
+        // 3. Update the Daily Counter
+        // Logic: If new vote is true and old wasn't true -> +1
+        // If new vote is false and old was true -> -1
+        let increment = 0;
+        if (decision === true && (!existingRecord || existingRecord.status !== true)) increment = 1;
+        if (decision === false && existingRecord?.status === true) increment = -1;
+
+        if (increment !== 0) {
+            const updatedDoc = await DailyCount.findOneAndUpdate(
+                { date },
+                { $inc: { [mealType]: increment } }, // Dynamic key: lunch or dinner
+                { upsert: true, new: true }
+            );
+
+            // 4. EMIT LIVE UPDATE TO MANAGER
+            // req.app.get('socketio') is a common way to access socket in controllers
+            const io = req.app.get('socketio');
+            io.emit('update_counts', {
+                lunch: updatedDoc.lunch,
+                dinner: updatedDoc.dinner
+            });
+        }
+
+        res.status(200).json({ message: "Status and Counts updated" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
-
 
 // Function to SAVE or UPDATE timings from Admin panel
 export const updateMealTimings = async (req, res) => {
