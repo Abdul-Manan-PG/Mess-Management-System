@@ -94,7 +94,7 @@ console.log(name,password,rollNumber);
         const cleanRoll = rollNumber.replace(/-/g, "").toLowerCase();
         
         // 4. Generate the official email automatically
-        const email = `${cleanRoll}@ksk.uet.edu.pk`;
+        const email = `${cleanRoll}@student.uet.edu.pk`;
 
         // 5. Hash the password for security
         const salt = await bcrypt.genSalt(10);
