@@ -1,16 +1,9 @@
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 
-// 1. Ensure the upload directory exists dynamically
-const uploadDir = './tmp/';
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// 2. Set storage engine
+// Change destination to Vercel's writable temporary directory (/tmp/)
 const storage = multer.diskStorage({
-    destination: uploadDir,
+    destination: '/tmp/', 
     filename: (req, file, cb) => {
         cb(null, `${Date.now()}-${file.originalname}`);
     }

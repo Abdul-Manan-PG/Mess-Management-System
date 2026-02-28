@@ -1,15 +1,11 @@
-// Remove all the commented-out old code at the top to keep it clean
-
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import { createServer } from 'http'; 
-import { Server } from 'socket.io'; 
 import connectDB from './config/db.js';
-import adminRoutes from './routes/adminRoutes.js'
-import managerRoutes from './routes/managerRoutes.js'
-import authRoutes from './routes/authRoutes.js'
-import studentRoutes from './routes/studentRoutes.js'
+import adminRoutes from './routes/adminRoutes.js';
+import managerRoutes from './routes/managerRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import studentRoutes from './routes/studentRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -19,24 +15,9 @@ connectDB();
 
 const app = express();
 
-// 1. Create HTTP Server and Socket.io instance
-const httpServer = createServer(app); 
-
-// 2. Setup Socket.io CORS for Live Deployment
-const io = new Server(httpServer, {
-    cors: {
-        // This will use your Vercel URL in production, but fall back to localhost for local testing
-        origin: process.env.FRONTEND_URL || "http://localhost:5173", 
-        methods: ["GET", "POST"]
-    }
-});
-
-// 3. Share 'io' with your routes/controllers
-app.set('socketio', io);
-
-// 4. Setup Express CORS for Live Deployment
+// Setup Express CORS for Live Deployment
 app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173"
+    origin: process.env.FRONTEND_URL || "*" // Allow your frontend URL
 }));
 
 app.use(express.json());
@@ -48,16 +29,16 @@ app.use('/api/manager', managerRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/student', studentRoutes);
 
+// Health check route
 app.get('/', (req, res) => {
-    res.send("Hostel Mess API is running! 🚀");
+    res.send("Hostel Mess API is running on Vercel! 🚀");
 });
 
-// Socket.io Connection Logic
-io.on('connection', (socket) => {
-    console.log('User connected to live updates:', socket.id);
-    socket.on('disconnect', () => console.log('User disconnected'));
-});
+// Local Development Server (Runs only if not on Vercel)
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => console.log(`Local server started on port ${PORT} ⚡`));
+}
 
-// IMPORTANT: Listen on httpServer, not app
-const PORT = process.env.PORT || 5000;
-httpServer.listen(PORT, () => console.log(`Server started on port ${PORT} ⚡`));
+// IMPORTANT FOR VERCEL: Export the app!
+export default app;
