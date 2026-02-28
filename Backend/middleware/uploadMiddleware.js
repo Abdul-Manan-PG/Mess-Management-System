@@ -1,9 +1,16 @@
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 
-// Set storage engine
+// 1. Ensure the upload directory exists dynamically
+const uploadDir = './tmp/';
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// 2. Set storage engine
 const storage = multer.diskStorage({
-    destination: './uploads/',
+    destination: uploadDir,
     filename: (req, file, cb) => {
         cb(null, `${Date.now()}-${file.originalname}`);
     }
